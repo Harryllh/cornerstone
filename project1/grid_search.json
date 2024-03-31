@@ -1,0 +1,13 @@
+{ "learning_rate": [
+      0.0001, 0.001, 0.01, 0.1
+    ],
+    "batch_size": [
+      16, 32, 64, 128, 256
+    ],
+    "num_epochs": [
+      10, 20, 30, 40
+    ],
+    "regularization_lambda": [
+      0, 0.1, 1, 10
+    ]
+}
