@@ -8,6 +8,7 @@ from src.lightning import MLP, RiskModel
 from src.dataset import PathMnist, NLST
 from lightning.pytorch.cli import LightningArgumentParser
 import lightning.pytorch as pl
+import pdb
 
 NAME_TO_MODEL_CLASS = {
     "mlp": MLP,
@@ -85,6 +86,7 @@ def main(args: argparse.Namespace):
     """
     datamodule = NAME_TO_DATASET_CLASS[args.dataset_name](**vars(args[args.dataset_name]))
 
+    pdb.set_trace()
     print("Initializing model")
     ## TODO: Implement your deep learning methods
     if args.checkpoint_path is None:
