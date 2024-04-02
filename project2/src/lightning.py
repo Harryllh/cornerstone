@@ -109,6 +109,7 @@ class Classifer(pl.LightningModule):
 
     def configure_optimizers(self):
         ## TODO: Define your optimizer and learning rate scheduler here (hint: Adam is a good default)
+        optimizer = torch.optim.Adam(self.parameters(), lr=self.init_lr)
         raise NotImplementedError("Not implemented yet")
 
 
@@ -118,17 +119,37 @@ class MLP(Classifer):
         super().__init__(num_classes=num_classes, init_lr=init_lr)
         self.save_hyperparameters()
 
+        self.input_dim = input_dim
         self.hidden_dim = hidden_dim
         self.use_bn = use_bn
+        self.num_layers = num_layers
 
+        self.input_layer = nn.Linear(input_dim, hidden_dim)
+        self.output_layer = nn.Linear(hidden_dim, num_classes)
+        self.bn_layer = nn.ModuleList([])
+        self.hidden_layers = nn.ModuleList([
+                nn.Linear(hidden_dim, hidden_dim) for _ in range(num_layers - 1)
+            ])
+        if use_bn:
+            self.bn_layers = nn.ModuleList([
+                nn.BatchNorm1d(hidden_dim) for _ in range(num_layers - 1)
+            ])
 
-        raise NotImplementedError("Not implemented yet")
 
 
     def forward(self, x):
         batch_size, channels, width, height = x.size()
-        raise NotImplementedError("Not implemented yet")
-        return None
+
+        x = self.input_layer(x)
+        x = nn.ReLU(x)
+        for i in range(self.num_layers):
+            x = self.hidden_layers[i](x)
+            if self.use_bn:
+                x = self.bn_layers[i](x)
+            x = F.relu(x)
+        x = self.output_layer(x)
+
+        return x
 
 
 NLST_CENSORING_DIST = {
@@ -139,6 +160,7 @@ NLST_CENSORING_DIST = {
     "4": 0.9523590830936284,
     "5": 0.9461840310101468,
 }
+
 class RiskModel(Classifer):
     def __init__(self, input_num_chan=1, num_classes=2, init_lr = 1e-3, max_followup=6, **kwargs):
         super().__init__(num_classes=num_classes, init_lr=init_lr)
