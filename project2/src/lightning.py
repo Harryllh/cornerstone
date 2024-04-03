@@ -5,6 +5,7 @@ import torch.nn.functional as F
 import torchmetrics
 import torchvision
 from src.cindex import concordance_index
+import pdb
 
 class Classifer(pl.LightningModule):
     def __init__(self, num_classes=9, init_lr=1e-4):
@@ -13,7 +14,7 @@ class Classifer(pl.LightningModule):
         self.num_classes = num_classes
 
         # Define loss fn for classifier
-        self.loss = None
+        self.loss = nn.CrossEntropyLoss()
 
         self.accuracy = torchmetrics.Accuracy(task="multiclass", num_classes=self.num_classes)
         self.auc = torchmetrics.AUROC(task="binary" if self.num_classes == 2 else "multiclass", num_classes=self.num_classes)
@@ -34,10 +35,11 @@ class Classifer(pl.LightningModule):
         x, y = self.get_xy(batch)
 
         ## TODO: get predictions from your model and store them as y_hat
-        y_hat = None
-        raise NotImplementedError("Not implemented yet")
+        
+        # pdb.set_trace()
+        y_hat = self.forward(x)
 
-        loss = None
+        loss = self.loss(y_hat, y)
 
         self.log('train_acc', self.accuracy(y_hat, y), prog_bar=True)
         self.log('train_loss', loss, prog_bar=True)
@@ -51,8 +53,10 @@ class Classifer(pl.LightningModule):
 
     def validation_step(self, batch, batch_idx):
         x, y = self.get_xy(batch)
+        x = x.reshape(x.size(0), -1)
+        y_hat = self.forward(x)
 
-        raise NotImplementedError("Not implemented yet")
+        loss = self.loss(y_hat, y)
 
         self.log('val_loss', loss, sync_dist=True, prog_bar=True)
         self.log("val_acc", self.accuracy(y_hat, y), sync_dist=True, prog_bar=True)
@@ -65,7 +69,10 @@ class Classifer(pl.LightningModule):
 
     def test_step(self, batch, batch_idx):
         x, y = self.get_xy(batch)
-        raise NotImplementedError("Not implemented yet")
+        x = x.reshape(x.size(0), -1)
+        y_hat = self.forward(x)
+
+        loss = self.loss(y_hat, y)
 
         self.log('test_loss', loss, sync_dist=True, prog_bar=True)
         self.log('test_acc', self.accuracy(y_hat, y), sync_dist=True, prog_bar=True)
@@ -75,6 +82,7 @@ class Classifer(pl.LightningModule):
             "y": y
         })
         return loss
+
     def on_train_epoch_end(self):
         y_hat = torch.cat([o["y_hat"] for o in self.training_outputs])
         y = torch.cat([o["y"] for o in self.training_outputs])
@@ -109,26 +117,73 @@ class Classifer(pl.LightningModule):
 
     def configure_optimizers(self):
         ## TODO: Define your optimizer and learning rate scheduler here (hint: Adam is a good default)
-        raise NotImplementedError("Not implemented yet")
+        return torch.optim.Adam(self.parameters(), lr=self.init_lr)
 
 
 
 class MLP(Classifer):
-    def __init__(self, input_dim=28*28*3, hidden_dim=128, num_layers=1, num_classes=9, use_bn=False, init_lr = 1e-3, **kwargs):
+    def __init__(self, input_dim=28*28*3, hidden_dim=128, num_layers=3, num_classes=9, use_bn=True, init_lr = 1e-3, **kwargs):
         super().__init__(num_classes=num_classes, init_lr=init_lr)
         self.save_hyperparameters()
 
+        self.input_dim = input_dim
         self.hidden_dim = hidden_dim
         self.use_bn = use_bn
+        self.num_layers = num_layers
 
-
-        raise NotImplementedError("Not implemented yet")
-
+        self.input_layer = nn.Linear(input_dim, hidden_dim)
+        self.output_layer = nn.Linear(hidden_dim, num_classes)
+        self.bn_layer = nn.ModuleList([])
+        self.hidden_layers = nn.ModuleList([
+                nn.Linear(hidden_dim, hidden_dim) for _ in range(num_layers)
+            ])
+        if use_bn:
+            self.bn_layers = nn.ModuleList([
+                nn.BatchNorm1d(hidden_dim) for _ in range(num_layers)
+            ])
 
     def forward(self, x):
-        batch_size, channels, width, height = x.size()
-        raise NotImplementedError("Not implemented yet")
-        return None
+        # batch_size, channels, width, height = x.size()
+        x = x.reshape(x.size(0), -1)
+        x = self.input_layer(x)
+        for i in range(self.num_layers):
+            x = self.hidden_layers[i](x)
+            if self.use_bn:
+                x = self.bn_layers[i](x)
+            x = F.relu(x)
+        
+        x = self.output_layer(x)
+
+        return x
+
+
+class PretrainedResNet(Classifer):
+    def __init__(self, input_dim=28*28*3, num_classes=9, stride=1, use_bn=True, init_lr = 1e-3, **kwargs):
+        super().__init__(num_classes=num_classes, init_lr=init_lr)
+        self.save_hyperparameters()
+
+        self.input_dim = input_dim
+        self.model = torchvision.models.resnet18(pretrained=True)
+        self.model.fc = torch.nn.Linear(self.model.fc.in_features, num_classes)
+
+    def forward(self, x):
+        # batch_size, channels, width, height = x.size()
+        x = self.model(x)
+        return x
+
+class ResNet(Classifer):
+    def __init__(self, input_dim=28*28*3, num_classes=9, stride=1, use_bn=True, init_lr = 1e-3, **kwargs):
+        super().__init__(num_classes=num_classes, init_lr=init_lr)
+        self.save_hyperparameters()
+
+        self.input_dim = input_dim
+        self.model = torchvision.models.resnet18(pretrained=False)
+        self.model.fc = torch.nn.Linear(self.model.fc.in_features, num_classes)
+
+    def forward(self, x):
+        # batch_size, channels, width, height = x.size()
+        x = self.model(x)
+        return x
 
 
 NLST_CENSORING_DIST = {
@@ -139,6 +194,7 @@ NLST_CENSORING_DIST = {
     "4": 0.9523590830936284,
     "5": 0.9461840310101468,
 }
+
 class RiskModel(Classifer):
     def __init__(self, input_num_chan=1, num_classes=2, init_lr = 1e-3, max_followup=6, **kwargs):
         super().__init__(num_classes=num_classes, init_lr=init_lr)

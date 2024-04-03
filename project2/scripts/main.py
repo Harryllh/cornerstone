@@ -4,7 +4,7 @@ import sys
 from os.path import dirname, realpath
 
 sys.path.append(dirname(dirname(realpath(__file__))))
-from src.lightning import MLP, RiskModel
+from src.lightning import MLP, PretrainedResNet, ResNet, RiskModel
 from src.dataset import PathMnist, NLST
 from lightning.pytorch.cli import LightningArgumentParser
 import lightning.pytorch as pl
@@ -12,6 +12,8 @@ import pdb
 
 NAME_TO_MODEL_CLASS = {
     "mlp": MLP,
+    "pretrainedresnet": PretrainedResNet,
+    "resnet": ResNet,
     "risk_model": RiskModel
 }
 
@@ -86,7 +88,12 @@ def main(args: argparse.Namespace):
     """
     datamodule = NAME_TO_DATASET_CLASS[args.dataset_name](**vars(args[args.dataset_name]))
 
-    pdb.set_trace()
+    
+    datamodule.setup()
+    datamodule.prepare_data()
+    datamodule.prepare_data_transforms()
+    # train_dl = datamodule.train_dataloader()
+
     print("Initializing model")
     ## TODO: Implement your deep learning methods
     if args.checkpoint_path is None:
@@ -100,6 +107,9 @@ def main(args: argparse.Namespace):
     args.trainer.accelerator = 'auto'
     args.trainer.logger = logger
     args.trainer.precision = "bf16-mixed" ## This mixed precision training is highly recommended
+    args.trainer.devices = [0]
+    args.trainer.min_epochs = 5
+    args.trainer.max_epochs = 5
 
     args.trainer.callbacks = [
         pl.callbacks.ModelCheckpoint(
@@ -110,9 +120,10 @@ def main(args: argparse.Namespace):
 
     trainer = pl.Trainer(**vars(args.trainer))
 
+
     if args.train:
         print("Training model")
-        trainer.fit(model, datamodule)
+        trainer.fit(model, datamodule.train_dataloader())
 
     print("Best model checkpoint path: ", trainer.checkpoint_callback.best_model_path)
 

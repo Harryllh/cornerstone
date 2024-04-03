@@ -35,23 +35,26 @@ class PathMnist(pl.LightningDataModule):
             torchvision.transforms.ToTensor()
         ])
         if self.use_data_augmentation:
-            # TODO: Implement some data augmentatons
-            self.train_transform = None
-            raise NotImplementedError("Not implemented yet")
+            self.train_transform = torchvision.transforms.Compose([
+                torchvision.transforms.RandomResizedCrop(size=(14, 14), antialias=True),
+                torchvision.transforms.RandomHorizontalFlip(p=0.5),
+                torchvision.transforms.ToDtype(torch.float32, scale=True),
+                torchvision.transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+            ])
         else:
             self.train_transform = torchvision.transforms.Compose([
                 torchvision.transforms.ToTensor()
             ])
 
     def prepare_data(self):
-        medmnist.PathMNIST(root='../data', split='train', download=True, transform=self.train_transform)
-        medmnist.PathMNIST(root='../data', split='val', download=True, transform=self.test_transform)
-        medmnist.PathMNIST(root='../data', split='test', download=True, transform=self.test_transform)
+        medmnist.PathMNIST(root='data', split='train', download=True, transform=self.train_transform)
+        medmnist.PathMNIST(root='data', split='val', download=True, transform=self.test_transform)
+        medmnist.PathMNIST(root='data', split='test', download=True, transform=self.test_transform)
 
     def setup(self, stage=None):
-        self.train = medmnist.PathMNIST(root='../data', split='train', download=True, transform=self.train_transform)
-        self.val = medmnist.PathMNIST(root='../data', split='val', download=True, transform=self.test_transform)
-        self.test = medmnist.PathMNIST(root='../data', split='test', download=True, transform=self.test_transform)
+        self.train = medmnist.PathMNIST(root='data', split='train', download=True, transform=self.train_transform)
+        self.val = medmnist.PathMNIST(root='data', split='val', download=True, transform=self.test_transform)
+        self.test = medmnist.PathMNIST(root='data', split='test', download=True, transform=self.test_transform)
 
     def train_dataloader(self):
         return torch.utils.data.DataLoader(self.train, batch_size=self.batch_size, num_workers=self.num_workers, shuffle=True)
