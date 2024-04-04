@@ -10,6 +10,7 @@ import tqdm
 import os
 from collections import Counter
 import pickle
+import pdb
 
 class PathMnist(pl.LightningDataModule):
     """
@@ -85,7 +86,7 @@ class NLST(pl.LightningDataModule):
             num_workers=0,
             nlst_metadata_path="/wynton/protected/group/yala/datasets/cph200a/nlst-metadata/full_nlst_google.json",
             valid_exam_path="/wynton/protected/group/yala/datasets/cph200a/nlst-metadata/valid_exams.p",
-            nlst_dir="/data/nlst/preprocessed",
+            nlst_dir="data/nlst/preprocessed",
             lungrads_path="/wynton/protected/group/yala/datasets/cph200a/nlst-metadata/nlst_acc2lungrads.p",
             num_images=200,
             max_followup=6,
@@ -192,6 +193,7 @@ class NLST(pl.LightningDataModule):
             # Introduce a method to deal with class imbalance (hint: think about your data loader)
             raise NotImplementedError("Not implemented yet")
 
+        pdb.set_trace()
         self.train = NLST_Dataset(self.train, self.train_transform, self.normalize, self.img_size, self.num_images)
         self.val = NLST_Dataset(self.val, self.test_transform, self.normalize, self.img_size, self.num_images)
         self.test = NLST_Dataset(self.test, self.test_transform, self.normalize, self.img_size, self.num_images)

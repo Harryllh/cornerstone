@@ -186,7 +186,7 @@ class ResNet_PathMnist(Classifer):
         x = self.model(x)
         return x
 
-class PtResNet_NLST(Classifer):
+class PtResNet18_NLST(Classifer):
     def __init__(self, input_dim=28*28*3, num_classes=2, stride=1, use_bn=True, init_lr = 1e-3, **kwargs):
         super().__init__(num_classes=num_classes, init_lr=init_lr)
         self.save_hyperparameters()

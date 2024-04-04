@@ -4,7 +4,7 @@ import sys
 from os.path import dirname, realpath
 
 sys.path.append(dirname(dirname(realpath(__file__))))
-from src.lightning import MLP, PtResNet_PathMnist, ResNet_PathMnist, PtResNet_NLST, ResNet_NLST, RiskModel
+from src.lightning import MLP, PtResNet_PathMnist, ResNet_PathMnist, PtResNet18_NLST, ResNet18_NLST, RiskModel
 from src.dataset import PathMnist, NLST
 from lightning.pytorch.cli import LightningArgumentParser
 import lightning.pytorch as pl
@@ -14,8 +14,8 @@ NAME_TO_MODEL_CLASS = {
     "mlp": MLP,
     "ptresnet_pathmnist": PtResNet_PathMnist,
     "resnet_pathmnist": ResNet_PathMnist,
-    "ptresnet_nlst": PtResNet_NLST,
-    "resnet_nlst": ResNet_NLST,
+    "ptresnet_nlst": PtResNet18_NLST,
+    "resnet_nlst": ResNet18_NLST,
     "risk_model": RiskModel
 }
 
@@ -88,12 +88,11 @@ def main(args: argparse.Namespace):
         However, you may want to alter this code for special localization logic or to suit your risk
         model implementations
     """
-    pdb.set_trace()
     datamodule = NAME_TO_DATASET_CLASS[args.dataset_name](**vars(args[args.dataset_name]))
 
     
     datamodule.setup()
-    datamodule.prepare_data()
+    # datamodule.prepare_data()
     datamodule.prepare_data_transforms()
     # train_dl = datamodule.train_dataloader()
 
@@ -122,7 +121,6 @@ def main(args: argparse.Namespace):
         )]
 
     trainer = pl.Trainer(**vars(args.trainer))
-
 
     if args.train:
         print("Training model")
