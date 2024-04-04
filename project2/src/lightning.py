@@ -158,7 +158,7 @@ class MLP(Classifer):
         return x
 
 
-class PretrainedResNet(Classifer):
+class PtResNet_PathMnist(Classifer):
     def __init__(self, input_dim=28*28*3, num_classes=9, stride=1, use_bn=True, init_lr = 1e-3, **kwargs):
         super().__init__(num_classes=num_classes, init_lr=init_lr)
         self.save_hyperparameters()
@@ -172,7 +172,7 @@ class PretrainedResNet(Classifer):
         x = self.model(x)
         return x
 
-class ResNet(Classifer):
+class ResNet_PathMnist(Classifer):
     def __init__(self, input_dim=28*28*3, num_classes=9, stride=1, use_bn=True, init_lr = 1e-3, **kwargs):
         super().__init__(num_classes=num_classes, init_lr=init_lr)
         self.save_hyperparameters()
@@ -186,6 +186,33 @@ class ResNet(Classifer):
         x = self.model(x)
         return x
 
+class PtResNet_NLST(Classifer):
+    def __init__(self, input_dim=28*28*3, num_classes=9, stride=1, use_bn=True, init_lr = 1e-3, **kwargs):
+        super().__init__(num_classes=num_classes, init_lr=init_lr)
+        self.save_hyperparameters()
+
+        self.input_dim = input_dim
+        self.model = torchvision.models.resnet18(pretrained=True)
+        self.model.fc = torch.nn.Linear(self.model.fc.in_features, num_classes)
+
+    def forward(self, x):
+        # batch_size, channels, width, height = x.size()
+        x = self.model(x)
+        return x
+
+class ResNet_NLST(Classifer):
+    def __init__(self, input_dim=28*28*3, num_classes=9, stride=1, use_bn=True, init_lr = 1e-3, **kwargs):
+        super().__init__(num_classes=num_classes, init_lr=init_lr)
+        self.save_hyperparameters()
+
+        self.input_dim = input_dim
+        self.model = torchvision.models.resnet18(pretrained=False)
+        self.model.fc = torch.nn.Linear(self.model.fc.in_features, num_classes)
+
+    def forward(self, x):
+        # batch_size, channels, width, height = x.size()
+        x = self.model(x)
+        return x
 
 NLST_CENSORING_DIST = {
     "0": 0.9851928130104401,
