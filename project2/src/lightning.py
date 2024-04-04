@@ -187,7 +187,7 @@ class ResNet_PathMnist(Classifer):
         return x
 
 class PtResNet_NLST(Classifer):
-    def __init__(self, input_dim=28*28*3, num_classes=9, stride=1, use_bn=True, init_lr = 1e-3, **kwargs):
+    def __init__(self, input_dim=28*28*3, num_classes=2, stride=1, use_bn=True, init_lr = 1e-3, **kwargs):
         super().__init__(num_classes=num_classes, init_lr=init_lr)
         self.save_hyperparameters()
 
@@ -200,10 +200,11 @@ class PtResNet_NLST(Classifer):
         x = self.model(x)
         return x
 
-class ResNet_NLST(Classifer):
-    def __init__(self, input_dim=28*28*3, num_classes=9, stride=1, use_bn=True, init_lr = 1e-3, **kwargs):
+class ResNet18_NLST(Classifer):
+    def __init__(self, input_dim=28*28*3, num_classes=2, stride=1, use_bn=True, init_lr = 1e-3, **kwargs):
         super().__init__(num_classes=num_classes, init_lr=init_lr)
         self.save_hyperparameters()
+        
 
         self.input_dim = input_dim
         self.model = torchvision.models.resnet18(pretrained=False)
@@ -213,6 +214,16 @@ class ResNet_NLST(Classifer):
         # batch_size, channels, width, height = x.size()
         x = self.model(x)
         return x
+    
+class Swin_NLST(Classifer):
+    def __init__(self, input_dim=28*28*3, num_classes=2, stride=1, use_bn=True, init_lr = 1e-3, **kwargs):
+        super().__init__(num_classes=num_classes, init_lr=init_lr)
+        self.save_hyperparameters()
+        self.input_dim = input_dim
+        self.model = torch.hub.load('microsoft/swin-transformer-v2')
+        self.model.head = torch.nn.Linear(self.model.head.in_features, num_classes)
+        
+
 
 NLST_CENSORING_DIST = {
     "0": 0.9851928130104401,
