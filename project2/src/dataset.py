@@ -193,7 +193,6 @@ class NLST(pl.LightningDataModule):
             # Introduce a method to deal with class imbalance (hint: think about your data loader)
             raise NotImplementedError("Not implemented yet")
 
-        pdb.set_trace()
         self.train = NLST_Dataset(self.train, self.train_transform, self.normalize, self.img_size, self.num_images)
         self.val = NLST_Dataset(self.val, self.test_transform, self.normalize, self.img_size, self.num_images)
         self.test = NLST_Dataset(self.test, self.test_transform, self.normalize, self.img_size, self.num_images)

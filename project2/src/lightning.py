@@ -36,7 +36,7 @@ class Classifer(pl.LightningModule):
 
         ## TODO: get predictions from your model and store them as y_hat
         
-        pdb.set_trace()
+        # pdb.set_trace()
         y_hat = self.forward(x)
 
         loss = self.loss(y_hat, y)
@@ -186,34 +186,58 @@ class ResNet_PathMnist(Classifer):
         x = self.model(x)
         return x
 
-class PtResNet18_NLST(Classifer):
+class CNN3D(Classifer):
+    def __init__(self, input_dim=256*256*200, num_classes=2, stride=1, use_bn=True, init_lr = 1e-3, **kwargs):
+        super().__init__(num_classes=num_classes, init_lr=init_lr)
+        self.save_hyperparameters()
+
+        self.conv1 = nn.Conv3d(in_channels=1, out_channels=16, kernel_size=3, stride=1, padding=1)
+        self.pool1 = nn.MaxPool3d(kernel_size=2, stride=2)
+        self.conv2 = nn.Conv3d(in_channels=16, out_channels=32, kernel_size=3, stride=1, padding=1)
+        self.pool2 = nn.MaxPool3d(kernel_size=2, stride=2)
+        self.conv3 = nn.Conv3d(in_channels=32, out_channels=64, kernel_size=3, stride=1, padding=1)
+        self.pool3 = nn.MaxPool3d(kernel_size=2, stride=2)
+        self.conv4 = nn.Conv3d(in_channels=64, out_channels=128, kernel_size=3, stride=1, padding=1)
+        self.pool4 = nn.MaxPool3d(kernel_size=2, stride=2)
+        self.conv5 = nn.Conv3d(in_channels=128, out_channels=256, kernel_size=3, stride=1, padding=1)
+        self.pool5 = nn.MaxPool3d(kernel_size=2, stride=2)
+
+        self.fc1 = nn.Linear(98304, 512)
+        self.fc2 = nn.Linear(512, num_classes)
+        self.flatten = nn.Flatten()
+
+    
+    def forward(self, x):
+        x = self.pool1(F.relu(self.conv1(x)))
+        x = self.pool2(F.relu(self.conv2(x)))
+        x = self.pool3(F.relu(self.conv3(x)))
+        x = self.pool4(F.relu(self.conv4(x)))
+        x = self.pool5(F.relu(self.conv5(x)))
+        x = self.flatten(x)    #TODO:Should I do this??? Too slow...
+        # pdb.set_trace()
+        x = self.fc1(x)
+        x = self.fc2(x)
+        return x
+
+
+class PtResNet3D_NLST(Classifer):
     def __init__(self, input_dim=28*28*3, num_classes=2, stride=1, use_bn=True, init_lr = 1e-3, **kwargs):
         super().__init__(num_classes=num_classes, init_lr=init_lr)
         self.save_hyperparameters()
 
-        self.input_dim = input_dim
-        self.model = torchvision.models.resnet18(pretrained=True)
-        self.model.fc = torch.nn.Linear(self.model.fc.in_features, num_classes)
+        self.model = torchvision.models.video.r3d_18(pretrained=True)
+        self.model.stem[0] = nn.Conv3d(1, 64, kernel_size=(3, 7, 7), stride=(1, 2, 2), padding=(1, 3, 3), bias=False)
+        self.model.fc = nn.Linear(in_features=512, out_features=2, bias=True)
 
     def forward(self, x):
-        # batch_size, channels, width, height = x.size()
+        # pdb.set_trace()
         x = self.model(x)
         return x
 
-class ResNet18_NLST(Classifer):
-    def __init__(self, input_dim=28*28*3, num_classes=2, stride=1, use_bn=True, init_lr = 1e-3, **kwargs):
-        super().__init__(num_classes=num_classes, init_lr=init_lr)
-        self.save_hyperparameters()
-        
 
-        self.input_dim = input_dim
-        self.model = torchvision.models.resnet18(pretrained=False)
-        self.model.fc = torch.nn.Linear(self.model.fc.in_features, num_classes)
 
-    def forward(self, x):
-        # batch_size, channels, width, height = x.size()
-        x = self.model(x)
-        return x
+
+
     
 class Swin_NLST(Classifer):
     def __init__(self, input_dim=28*28*3, num_classes=2, stride=1, use_bn=True, init_lr = 1e-3, **kwargs):
@@ -222,7 +246,7 @@ class Swin_NLST(Classifer):
         self.input_dim = input_dim
         self.model = torch.hub.load('microsoft/swin-transformer-v2')
         self.model.head = torch.nn.Linear(self.model.head.in_features, num_classes)
-        
+
 
 
 NLST_CENSORING_DIST = {
