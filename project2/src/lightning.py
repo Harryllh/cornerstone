@@ -36,7 +36,7 @@ class Classifer(pl.LightningModule):
 
         ## TODO: get predictions from your model and store them as y_hat
         
-        # pdb.set_trace()
+        pdb.set_trace()
         y_hat = self.forward(x)
 
         loss = self.loss(y_hat, y)
