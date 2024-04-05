@@ -86,7 +86,7 @@ class NLST(pl.LightningDataModule):
             num_workers=0,
             nlst_metadata_path="/wynton/protected/group/yala/datasets/cph200a/nlst-metadata/full_nlst_google.json",
             valid_exam_path="/wynton/protected/group/yala/datasets/cph200a/nlst-metadata/valid_exams.p",
-            nlst_dir="data/nlst/preprocessed",
+            nlst_dir="data/nlst",
             lungrads_path="/wynton/protected/group/yala/datasets/cph200a/nlst-metadata/nlst_acc2lungrads.p",
             num_images=200,
             max_followup=6,

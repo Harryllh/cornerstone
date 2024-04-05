@@ -193,6 +193,7 @@ class PtResNet18_NLST(Classifer):
 
         self.input_dim = input_dim
         self.model = torchvision.models.resnet18(pretrained=True)
+        self.model.conv1 = torch.nn.Conv2d(200, 64, kernel_size=(7, 7), stride=(2, 2), padding=(3, 3), bias=False)
         self.model.fc = torch.nn.Linear(self.model.fc.in_features, num_classes)
 
     def forward(self, x):
@@ -222,7 +223,7 @@ class Swin_NLST(Classifer):
         self.input_dim = input_dim
         self.model = torch.hub.load('microsoft/swin-transformer-v2')
         self.model.head = torch.nn.Linear(self.model.head.in_features, num_classes)
-        
+
 
 
 NLST_CENSORING_DIST = {
