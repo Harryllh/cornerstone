@@ -196,11 +196,13 @@ class CNN3D(Classifer):
         self.conv2 = nn.Conv3d(in_channels=16, out_channels=32, kernel_size=3, stride=1, padding=1)
         self.pool2 = nn.MaxPool3d(kernel_size=2, stride=2)
         self.conv3 = nn.Conv3d(in_channels=32, out_channels=64, kernel_size=3, stride=1, padding=1)
-        self.pool3 = nn.MaxPool3d(kernel_size=2, stride=2)
-        self.conv4 = nn.Conv3d(in_channels=64, out_channels=128, kernel_size=3, stride=1, padding=1)
-        self.pool4 = nn.MaxPool3d(kernel_size=2, stride=2)
-        self.conv5 = nn.Conv3d(in_channels=128, out_channels=256, kernel_size=3, stride=1, padding=1)
-        self.pool5 = nn.MaxPool3d(kernel_size=2, stride=2)
+        # self.pool3 = nn.MaxPool3d(kernel_size=2, stride=2)
+        # self.conv4 = nn.Conv3d(in_channels=64, out_channels=128, kernel_size=3, stride=1, padding=1)
+        # self.pool4 = nn.MaxPool3d(kernel_size=2, stride=2)
+        # self.conv5 = nn.Conv3d(in_channels=128, out_channels=256, kernel_size=3, stride=1, padding=1)
+        # self.pool5 = nn.MaxPool3d(kernel_size=2, stride=2)
+
+        self.global_avg_pool = nn.AdaptiveAvgPool3d((3, 3, 3))
 
         self.fc1 = nn.Linear(98304, 512)
         self.fc2 = nn.Linear(512, num_classes)
@@ -210,10 +212,12 @@ class CNN3D(Classifer):
     def forward(self, x):
         x = self.pool1(F.relu(self.conv1(x)))
         x = self.pool2(F.relu(self.conv2(x)))
-        x = self.pool3(F.relu(self.conv3(x)))
-        x = self.pool4(F.relu(self.conv4(x)))
-        x = self.pool5(F.relu(self.conv5(x)))
-        x = self.flatten(x)    #TODO:Should I do this??? Too slow...
+        x = F.relu(self.conv3(x))
+        # x = self.pool4(F.relu(self.conv4(x)))
+        # x = self.pool5(F.relu(self.conv5(x)))
+        pdb.set_trace()
+        x = self.global_avg_pool(x)
+        # x = self.flatten(x)    #TODO:Should I do this??? Too slow...
         # pdb.set_trace()
         x = self.fc1(x)
         x = self.fc2(x)
