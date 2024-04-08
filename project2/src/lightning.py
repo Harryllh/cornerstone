@@ -210,12 +210,13 @@ class CNN3D(Classifer):
 
     
     def forward(self, x):
-        x = self.pool1(F.relu(self.conv1(x)))
-        x = self.pool2(F.relu(self.conv2(x)))
+        pdb.set_trace()
+        x = F.relu(self.conv1(x))
+        x = F.relu(self.conv2(x))
         x = F.relu(self.conv3(x))
         # x = self.pool4(F.relu(self.conv4(x)))
         # x = self.pool5(F.relu(self.conv5(x)))
-        pdb.set_trace()
+        
         x = self.global_avg_pool(x)
         # x = self.flatten(x)    #TODO:Should I do this??? Too slow...
         # pdb.set_trace()
