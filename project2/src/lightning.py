@@ -37,7 +37,7 @@ class Classifer(pl.LightningModule):
 
         ## TODO: get predictions from your model and store them as y_hat
         
-        pdb.set_trace()
+        # pdb.set_trace()
         y_hat = self.forward(x)
 
         loss = self.loss(y_hat, y)
@@ -198,14 +198,14 @@ class CNN3D(Classifer):
         self.pool2 = nn.MaxPool3d(kernel_size=2, stride=2)
         self.conv3 = nn.Conv3d(in_channels=128, out_channels=256, kernel_size=3, stride=1, padding=1)
         self.pool3 = nn.MaxPool3d(kernel_size=2, stride=2)
-        self.conv4 = nn.Conv3d(in_channels=256, out_channels=512, kernel_size=3, stride=1, padding=1)
-        self.pool4 = nn.MaxPool3d(kernel_size=2, stride=2)
+        # self.conv4 = nn.Conv3d(in_channels=256, out_channels=512, kernel_size=3, stride=1, padding=1)
+        # self.pool4 = nn.MaxPool3d(kernel_size=2, stride=2)
 
-        self.attention_pool = AttentionPool(32 * 32 * 25)
+        # self.attention_pool = AttentionPool(32 * 32 * 25)
 
         self.global_avg_pool = nn.AdaptiveAvgPool3d(output_size=(1, 1, 1))
 
-        self.fc = nn.Linear(8, num_classes)
+        self.fc = nn.Linear(256, num_classes)
 
     
     def forward(self, x):
@@ -215,17 +215,20 @@ class CNN3D(Classifer):
         x = self.pool2(x)
         x = F.relu(self.conv3(x))
         x = self.pool3(x)
+        # x = F.relu(self.conv4(x))
+        # x = self.pool4(x)
 
-        x = self.attention_pool(x)
+        # pdb.set_trace()
+        # x = self.attention_pool(x)
         
         x = self.global_avg_pool(x)
         # pdb.set_trace()
         # x = x.view([16, 64])
 
         x = x.squeeze()
-        x = x.unsqueeze(0)
+        # x = x.unsqueeze(0)
         
-        # x = self.fc(x)
+        x = self.fc(x)
         return x
 
 class AttentionPool(nn.Module):

@@ -9,6 +9,8 @@ from src.dataset import PathMnist, NLST
 from lightning.pytorch.cli import LightningArgumentParser
 import lightning.pytorch as pl
 import pdb
+import io
+import contextlib
 
 NAME_TO_MODEL_CLASS = {
     "mlp": MLP,
@@ -110,7 +112,7 @@ def main(args: argparse.Namespace):
     args.trainer.accelerator = 'auto'
     # args.trainer.logger = logger
     args.trainer.precision = "bf16-mixed" ## This mixed precision training is highly recommended
-    args.trainer.devices = [0]
+    args.trainer.devices = [0, 1]
     args.trainer.min_epochs = 2
     args.trainer.max_epochs = 2
 
@@ -123,19 +125,28 @@ def main(args: argparse.Namespace):
 
     trainer = pl.Trainer(**vars(args.trainer))
 
-    if args.train:
-        print("Training model")
-        trainer.fit(model, datamodule.train_dataloader())
+    f = io.StringIO()
 
-    print("Best model checkpoint path: ", trainer.checkpoint_callback.best_model_path)
+    with contextlib.redirect_stdout(f):
 
-    print("Evaluating model on validation set")
-    trainer.validate(model, datamodule)
+        if args.train:
+            print("Training model")
+            trainer.fit(model, datamodule.train_dataloader())
 
-    print("Evaluating model on test set")
-    trainer.test(model, datamodule)
+        print("Best model checkpoint path: ", trainer.checkpoint_callback.best_model_path)
 
-    print("Done")
+        print("Evaluating model on validation set")
+        trainer.validate(model, datamodule)
+
+        print("Evaluating model on test set")
+        trainer.test(model, datamodule)
+
+        print("Done")
+    
+    output = f.getvalue()
+
+    with open("modeloutput.txt", "w") as ff:
+        ff.write(output)
 
 
 if __name__ == '__main__':
