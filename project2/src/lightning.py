@@ -5,6 +5,7 @@ import torch.nn.functional as F
 import torchmetrics
 import torchvision
 from src.cindex import concordance_index
+from transformers import SwinConfig, SwinModel
 import pdb
 
 class Classifer(pl.LightningModule):
@@ -36,7 +37,7 @@ class Classifer(pl.LightningModule):
 
         ## TODO: get predictions from your model and store them as y_hat
         
-        # pdb.set_trace()
+        pdb.set_trace()
         y_hat = self.forward(x)
 
         loss = self.loss(y_hat, y)
@@ -191,38 +192,54 @@ class CNN3D(Classifer):
         super().__init__(num_classes=num_classes, init_lr=init_lr)
         self.save_hyperparameters()
 
-        self.conv1 = nn.Conv3d(in_channels=1, out_channels=16, kernel_size=3, stride=1, padding=1)
+        self.conv1 = nn.Conv3d(in_channels=1, out_channels=64, kernel_size=3, stride=1, padding=1)
         self.pool1 = nn.MaxPool3d(kernel_size=2, stride=2)
-        self.conv2 = nn.Conv3d(in_channels=16, out_channels=32, kernel_size=3, stride=1, padding=1)
+        self.conv2 = nn.Conv3d(in_channels=64, out_channels=128, kernel_size=3, stride=1, padding=1)
         self.pool2 = nn.MaxPool3d(kernel_size=2, stride=2)
-        self.conv3 = nn.Conv3d(in_channels=32, out_channels=64, kernel_size=3, stride=1, padding=1)
-        # self.pool3 = nn.MaxPool3d(kernel_size=2, stride=2)
-        # self.conv4 = nn.Conv3d(in_channels=64, out_channels=128, kernel_size=3, stride=1, padding=1)
-        # self.pool4 = nn.MaxPool3d(kernel_size=2, stride=2)
-        # self.conv5 = nn.Conv3d(in_channels=128, out_channels=256, kernel_size=3, stride=1, padding=1)
-        # self.pool5 = nn.MaxPool3d(kernel_size=2, stride=2)
+        self.conv3 = nn.Conv3d(in_channels=128, out_channels=256, kernel_size=3, stride=1, padding=1)
+        self.pool3 = nn.MaxPool3d(kernel_size=2, stride=2)
+        self.conv4 = nn.Conv3d(in_channels=256, out_channels=512, kernel_size=3, stride=1, padding=1)
+        self.pool4 = nn.MaxPool3d(kernel_size=2, stride=2)
 
-        self.global_avg_pool = nn.AdaptiveAvgPool3d((3, 3, 3))
+        self.attention_pool = AttentionPool(32 * 32 * 25)
 
-        self.fc1 = nn.Linear(98304, 512)
-        self.fc2 = nn.Linear(512, num_classes)
-        self.flatten = nn.Flatten()
+        self.global_avg_pool = nn.AdaptiveAvgPool3d(output_size=(1, 1, 1))
+
+        self.fc = nn.Linear(8, num_classes)
 
     
     def forward(self, x):
-        pdb.set_trace()
         x = F.relu(self.conv1(x))
+        x = self.pool1(x)
         x = F.relu(self.conv2(x))
+        x = self.pool2(x)
         x = F.relu(self.conv3(x))
-        # x = self.pool4(F.relu(self.conv4(x)))
-        # x = self.pool5(F.relu(self.conv5(x)))
+        x = self.pool3(x)
+
+        x = self.attention_pool(x)
         
         x = self.global_avg_pool(x)
-        # x = self.flatten(x)    #TODO:Should I do this??? Too slow...
         # pdb.set_trace()
-        x = self.fc1(x)
-        x = self.fc2(x)
+        # x = x.view([16, 64])
+
+        x = x.squeeze()
+        x = x.unsqueeze(0)
+        
+        # x = self.fc(x)
         return x
+
+class AttentionPool(nn.Module):
+    def __init__(self, input_dim):
+        super(AttentionPool, self).__init__()
+        self.W = nn.Linear(input_dim, 1)
+
+    def forward(self, x):
+        batch_size, c, d, h, w = x.size()
+        x_flat = x.view(batch_size, c, -1)
+        x_flat = self.W(x_flat).squeeze(-1)
+        att_scores = F.softmax(x_flat.unsqueeze(-1).unsqueeze(-1).unsqueeze(-1))
+        output = torch.sum(x * att_scores, dim=1)
+        return output
 
 
 class PtResNet3D_NLST(Classifer):
@@ -232,10 +249,11 @@ class PtResNet3D_NLST(Classifer):
 
         self.model = torchvision.models.video.r3d_18(pretrained=True)
         self.model.stem[0] = nn.Conv3d(1, 64, kernel_size=(3, 7, 7), stride=(1, 2, 2), padding=(1, 3, 3), bias=False)
-        self.model.fc = nn.Linear(in_features=512, out_features=2, bias=True)
+        # self.model.fc = nn.Linear(in_features=512, out_features=2, bias=True)
 
     def forward(self, x):
-        # pdb.set_trace()
+        pdb.set_trace()
+        
         x = self.model(x)
         return x
 
@@ -245,12 +263,15 @@ class PtResNet3D_NLST(Classifer):
 
     
 class Swin_NLST(Classifer):
-    def __init__(self, input_dim=28*28*3, num_classes=2, stride=1, use_bn=True, init_lr = 1e-3, **kwargs):
+    def __init__(self, num_classes=2, stride=1, use_bn=True, init_lr = 1e-3, **kwargs):
         super().__init__(num_classes=num_classes, init_lr=init_lr)
         self.save_hyperparameters()
-        self.input_dim = input_dim
-        self.model = torch.hub.load('microsoft/swin-transformer-v2')
-        self.model.head = torch.nn.Linear(self.model.head.in_features, num_classes)
+        self.model = SwinModel.from_pretrained("microsoft/swin-tiny-patch4-window7-224")
+
+    def forward(self, x):
+        pdb.set_trace()
+        x = self.model(x)
+        return x
 
 
 

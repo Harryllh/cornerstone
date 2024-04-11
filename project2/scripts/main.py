@@ -4,7 +4,7 @@ import sys
 from os.path import dirname, realpath
 
 sys.path.append(dirname(dirname(realpath(__file__))))
-from src.lightning import MLP, PtResNet_PathMnist, ResNet_PathMnist, PtResNet3D_NLST, CNN3D, RiskModel
+from src.lightning import MLP, PtResNet_PathMnist, ResNet_PathMnist, PtResNet3D_NLST, CNN3D, Swin_NLST, RiskModel
 from src.dataset import PathMnist, NLST
 from lightning.pytorch.cli import LightningArgumentParser
 import lightning.pytorch as pl
@@ -16,6 +16,7 @@ NAME_TO_MODEL_CLASS = {
     "resnet_pathmnist": ResNet_PathMnist,
     "cnn3d": CNN3D,
     "ptresnet3d_nlst": PtResNet3D_NLST,
+    "swin": Swin_NLST,
     "risk_model": RiskModel
 }
 
@@ -35,7 +36,7 @@ def add_main_args(parser: LightningArgumentParser) -> LightningArgumentParser:
 
     parser.add_argument(
         "--dataset_name",
-        default="nlst",
+        default="pathmnist",
         help="Name of dataset to use. Options: pathmnist, nlst"
     )
 
@@ -104,12 +105,12 @@ def main(args: argparse.Namespace):
         model = NAME_TO_MODEL_CLASS[args.model_name].load_from_checkpoint(args.checkpoint_path)
 
     print("Initializing trainer")
-    logger = pl.loggers.WandbLogger(project=args.project_name)
+    # logger = pl.loggers.WandbLogger(project=args.project_name)
 
     args.trainer.accelerator = 'auto'
-    args.trainer.logger = logger
+    # args.trainer.logger = logger
     args.trainer.precision = "bf16-mixed" ## This mixed precision training is highly recommended
-    args.trainer.devices = [1]
+    args.trainer.devices = [0]
     args.trainer.min_epochs = 2
     args.trainer.max_epochs = 2
 

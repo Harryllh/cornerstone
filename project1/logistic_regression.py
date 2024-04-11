@@ -22,6 +22,7 @@ class LogisticRegression():
         self.theta = np.zeros((X.shape[1]))
         for epoch in range(self.num_epochs):
             for i in range(0, X.shape[0], self.batch_size):
+                # TODO: each batch should be a random sample of the dataset
                 X_batch = X[i:i + self.batch_size]
                 Y_batch = Y[i:i + self.batch_size]
                 d_theta = self.gradient(X_batch, Y_batch)
