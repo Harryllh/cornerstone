@@ -215,18 +215,10 @@ class CNN3D(Classifer):
         x = self.pool2(x)
         x = F.relu(self.conv3(x))
         x = self.pool3(x)
-        # x = F.relu(self.conv4(x))
-        # x = self.pool4(x)
-
-        # pdb.set_trace()
-        # x = self.attention_pool(x)
         
         x = self.global_avg_pool(x)
-        # pdb.set_trace()
-        # x = x.view([16, 64])
 
         x = x.squeeze()
-        # x = x.unsqueeze(0)
         
         x = self.fc(x)
         return x
